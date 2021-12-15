@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema({
 
 });
 
+
 userSchema.plugin(encrypt, {secret: process.env.SECRET, encryptedFields: ['password']});
 
 //model
@@ -74,7 +75,7 @@ app.route("/register")
         });
     });
 
-
+//set port
 app.listen(process.env.PORT || 4000, ()=>
     console.log("server up and running ")
 )
