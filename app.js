@@ -3,6 +3,8 @@ const express = require('express');
 const ejs = require('ejs');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const saltRounds = 10 ;
 
 const app = express();
 
@@ -40,11 +42,13 @@ app.route("/login")
         User.findOne({username: username},
             (err, member)=>{
                 if (!err){
-                    if (password === member.password){
-                        res.render("secrets");
-                    }else {
-                        res.redirect("/login");
-                    }
+                    bcrypt.compare(password, member.password, (err, result)=>{
+                        if(result === true){
+                            res.render("secrets")
+                        }else{
+                            res.redirect("login")
+                        }
+                    })
                 }else {
                     res.redirect("/login");
                 }
@@ -59,16 +63,21 @@ app.route("/register")
         res.render("register");
     })
     .post((req, res)=>{
-        const newUser= new User({
-            username: req.body.username,
-            password: req.body.password
-        });
-        newUser.save((err)=>{
-            if(!err){
-                res.render("secrets");
-                console.log("saved to db");
-            }
-        });
+
+        //create user only after securing the password
+        bcrypt.hash(req.body.password, saltRounds, (error, hash)=>{
+            const newUser= new User({
+                username: req.body.username,
+                password: hash
+            });
+            newUser.save((err)=>{
+                if(!err){
+                    res.render("secrets");
+                    console.log("saved to db");
+                }
+            });
+        })
+
     });
 
 //set port
