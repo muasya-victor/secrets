@@ -1,24 +1,39 @@
-require('dotenv').config()
 const express = require('express');
 const ejs = require('ejs');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
-const saltRounds = 10 ;
+const session = require('express-session');
+const passport = require('passport');
+const passportLocalMongoose = require('passport-local-mongoose');
+
+
 
 const app = express();
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(bodyParser.urlencoded({extended : true}));
+
+//let passport use the module session
+app.use(session({
+    secret : "justA SafeSecret.",
+    resave: false,
+    saveUninitialized: false
+}));
+
+//initialize passport and session
+app.use(passport.initialize());
+app.use(passport.session());
+
 mongoose.connect("mongodb://localhost:27017/usersDB");
 
 //schema
 const userSchema = new mongoose.Schema({
     password:String,
     username: String,
-
 });
+
+userSchema.plugin(passportLocalMongoose);
 
 //model
 const User = mongoose.model("User", userSchema);
@@ -36,24 +51,7 @@ app.route("/login")
     })//end of get
 
     .post((req, res)=>{
-        const username = req.body.username;
-        const password = req.body.password;
 
-        User.findOne({username: username},
-            (err, member)=>{
-                if (!err){
-                    bcrypt.compare(password, member.password, (err, result)=>{
-                        if(result === true){
-                            res.render("secrets")
-                        }else{
-                            res.redirect("login")
-                        }
-                    })
-                }else {
-                    res.redirect("/login");
-                }
-            }
-        )
     });//end of post
 
 
@@ -64,19 +62,6 @@ app.route("/register")
     })
     .post((req, res)=>{
 
-        //create user only after securing the password
-        bcrypt.hash(req.body.password, saltRounds, (error, hash)=>{
-            const newUser= new User({
-                username: req.body.username,
-                password: hash
-            });
-            newUser.save((err)=>{
-                if(!err){
-                    res.render("secrets");
-                    console.log("saved to db");
-                }
-            });
-        })
 
     });
 
